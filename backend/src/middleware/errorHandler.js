@@ -14,9 +14,9 @@ function errorHandler(err, req, res, _next) {
     stack: err.stack,
   });
 
-  res.status(status).json({
-    error: { code, message },
-  });
+  const body = { error: { code, message } };
+  if (err.details !== undefined) body.error.details = err.details;
+  res.status(status).json(body);
 }
 
 function notFoundHandler(req, res) {
