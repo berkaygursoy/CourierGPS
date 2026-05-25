@@ -21,11 +21,12 @@ describe('validate middleware', () => {
 
   test('replaces req.body with parsed value (strips unknown keys)', async () => {
     const schema2 = z.object({
-      body: z.object({ name: z.string() }).strict(),
+      body: z.object({ name: z.string() }), // default = strip
     });
-    const req = { body: { name: 'Bob' } };
+    const req = { body: { name: 'Bob', secret: 'leak-me' } };
     await runMiddleware(validate(schema2), req);
     expect(req.body).toEqual({ name: 'Bob' });
+    expect(req.body.secret).toBeUndefined();
   });
 
   test('calls next with HttpError(400) when body invalid', async () => {
