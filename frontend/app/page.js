@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { sortCouriersByDistance } from '@/lib/geo';
 import { Topbar } from '@/components/dispatch/Topbar';
 import { MapView } from '@/components/dispatch/MapView';
 import { CourierRail } from '@/components/dispatch/CourierRail';
@@ -21,6 +22,15 @@ export default function Dashboard() {
   // Selected order may have been assigned away — fall back to first available.
   const activeOrderId =
     orders.find((o) => o.id === selectedOrderId)?.id ?? orders[0]?.id;
+
+  const activeOrder = orders.find((o) => o.id === activeOrderId);
+
+  // Recompute courier distances relative to the active order's pickup location
+  // so the rail re-ranks whenever the dispatcher selects a different order.
+  const sortedCouriers = useMemo(() => {
+    if (!activeOrder?.lat || !activeOrder?.lng) return couriers;
+    return sortCouriersByDistance(couriers, { lat: activeOrder.lat, lng: activeOrder.lng });
+  }, [couriers, activeOrder?.lat, activeOrder?.lng]);
 
   const kpis = useMemo(() => {
     const idle = couriers.filter((c) => c.status === 'idle').length;
@@ -98,13 +108,13 @@ export default function Dashboard() {
       <section className="grid grid-cols-[1fr_380px] min-h-0">
         <MapView
           orders={orders}
-          couriers={couriers}
+          couriers={sortedCouriers}
           merchants={STUB_MERCHANTS}
           selectedOrderId={activeOrderId}
           coordsLabel={STUB_OPERATOR.coordsLabel}
         />
         <CourierRail
-          couriers={couriers}
+          couriers={sortedCouriers}
           selectedOrderId={activeOrderId}
           onAssign={onAssign}
         />

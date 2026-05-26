@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 
+
 # Env files
 .env
 .env.local
@@ -16,6 +17,7 @@ npm-debug.log*
 Thumbs.db
 
 # IDE
+
 .vscode/
 .idea/
 

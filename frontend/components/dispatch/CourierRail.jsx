@@ -81,8 +81,15 @@ export function CourierRail({ couriers, selectedOrderId, onAssign }) {
   const idleCount = couriers.filter((c) => c.status === 'idle').length;
   const busyCount = couriers.length - idleCount;
 
-  // Sort by distance — the nearest two are highlighted as "nearest".
+  // Couriers arrive pre-sorted from page.js (sortCouriersByDistance), but
+  // sort defensively here so the component is correct in isolation.
   const sorted = [...couriers].sort((a, b) => a.distanceKm - b.distanceKm);
+
+  // Pick the nearest 2 idle couriers specifically — not the nearest 2 overall,
+  // which would mark busy couriers if they happen to be closest.
+  const nearestIdleIds = new Set(
+    sorted.filter((c) => c.status === 'idle').slice(0, 2).map((c) => c.id),
+  );
 
   return (
     <aside aria-label="Courier list" className="bg-canvas grid grid-rows-[auto_1fr] min-h-0">
@@ -115,7 +122,7 @@ export function CourierRail({ couriers, selectedOrderId, onAssign }) {
             key={c.id}
             rank={i + 1}
             courier={c}
-            isNearest={c.status === 'idle' && i < 2}
+            isNearest={nearestIdleIds.has(c.id)}
             onAssign={() => onAssign?.(c)}
           />
         ))}

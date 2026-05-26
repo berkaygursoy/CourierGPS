@@ -57,11 +57,11 @@ export function Topbar({ kpis, operator }) {
           className="w-7 h-7 grid place-items-center bg-signal text-canvas font-display italic text-[22px] leading-none pb-1"
           aria-hidden="true"
         >
-          D
+          C
         </div>
         <div>
           <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-paper">
-            Dispatch
+            CourierGPS
           </div>
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
             {operator.sector}

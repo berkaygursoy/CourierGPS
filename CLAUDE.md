@@ -1,4 +1,4 @@
-# kuryeTakip
+# CourierGPS
 
 Real-time courier dispatch dashboard. Greenfield portfolio project demonstrating WebSocket fan-out, Redis GEO queries, and React surgical re-renders.
 

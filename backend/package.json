@@ -1,5 +1,5 @@
 {
-  "name": "kurye-takip-backend",
+  "name": "couriergps-backend",
   "version": "0.1.0",
   "description": "Real-time courier tracking backend (Express + Redis + PostgreSQL)",
   "main": "server.js",

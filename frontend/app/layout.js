@@ -25,8 +25,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: 'Dispatch',
-  description: 'Control room for live courier dispatch',
+  title: 'CourierGPS',
+  description: 'CourierGPS — control room for live courier dispatch',
 };
 
 export default function RootLayout({ children }) {
