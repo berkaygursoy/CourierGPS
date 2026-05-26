@@ -93,4 +93,101 @@ describe('Merchants', () => {
       ).rejects.toMatchObject({ status: 404, code: 'NOT_FOUND' });
     });
   });
+
+  describe('HTTP', () => {
+    const validBody = () => ({
+      name: 'Pizza Hub',
+      address: '5 Demo Street',
+      latitude: 41.0082,
+      longitude: 28.9784,
+      phone: '+905001112233',
+    });
+
+    test('POST /api/merchants -> 201 with created entity', async () => {
+      const res = await request(app).post('/api/merchants').send(validBody());
+      expect(res.status).toBe(201);
+      expect(res.body.id).toMatch(/^[0-9a-f-]{36}$/);
+      expect(res.body.name).toBe('Pizza Hub');
+      expect(res.body.is_active).toBe(true);
+    });
+
+    test('POST /api/merchants -> 400 when name missing', async () => {
+      const body = validBody();
+      delete body.name;
+      const res = await request(app).post('/api/merchants').send(body);
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+      expect(res.body.error.details.some((d) => d.path.includes('name'))).toBe(true);
+    });
+
+    test('POST /api/merchants -> 400 when latitude out of range', async () => {
+      const res = await request(app).post('/api/merchants').send({ ...validBody(), latitude: 200 });
+      expect(res.status).toBe(400);
+    });
+
+    test('GET /api/merchants -> 200 with array', async () => {
+      await request(app).post('/api/merchants').send(validBody());
+      await request(app).post('/api/merchants').send({ ...validBody(), name: 'Second' });
+      const res = await request(app).get('/api/merchants');
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body).toHaveLength(2);
+    });
+
+    test('GET /api/merchants -> 200 with empty array when none', async () => {
+      const res = await request(app).get('/api/merchants');
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual([]);
+    });
+
+    test('GET /api/merchants/:id -> 200 with entity', async () => {
+      const created = await request(app).post('/api/merchants').send(validBody());
+      const res = await request(app).get(`/api/merchants/${created.body.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.id).toBe(created.body.id);
+    });
+
+    test('GET /api/merchants/:id -> 404 when not found', async () => {
+      const res = await request(app).get('/api/merchants/00000000-0000-0000-0000-000000000000');
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('NOT_FOUND');
+    });
+
+    test('GET /api/merchants/:id -> 400 when id not a uuid', async () => {
+      const res = await request(app).get('/api/merchants/not-a-uuid');
+      expect(res.status).toBe(400);
+    });
+
+    test('PATCH /api/merchants/:id -> 200 with updated entity', async () => {
+      const created = await request(app).post('/api/merchants').send(validBody());
+      const res = await request(app)
+        .patch(`/api/merchants/${created.body.id}`)
+        .send({ name: 'Renamed', is_active: false });
+      expect(res.status).toBe(200);
+      expect(res.body.name).toBe('Renamed');
+      expect(res.body.is_active).toBe(false);
+    });
+
+    test('PATCH /api/merchants/:id -> 400 when body empty', async () => {
+      const created = await request(app).post('/api/merchants').send(validBody());
+      const res = await request(app).patch(`/api/merchants/${created.body.id}`).send({});
+      expect(res.status).toBe(400);
+    });
+
+    test('PATCH /api/merchants/:id -> 404 when not found', async () => {
+      const res = await request(app)
+        .patch('/api/merchants/00000000-0000-0000-0000-000000000000')
+        .send({ name: 'X' });
+      expect(res.status).toBe(404);
+    });
+
+    test('DELETE /api/merchants/:id -> 204 then 404 on second delete', async () => {
+      const created = await request(app).post('/api/merchants').send(validBody());
+      const del = await request(app).delete(`/api/merchants/${created.body.id}`);
+      expect(del.status).toBe(204);
+
+      const second = await request(app).delete(`/api/merchants/${created.body.id}`);
+      expect(second.status).toBe(404);
+    });
+  });
 });
