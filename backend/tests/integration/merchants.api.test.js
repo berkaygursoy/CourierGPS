@@ -64,4 +64,33 @@ describe('Merchants', () => {
       expect(await merchantRepo.findById('00000000-0000-0000-0000-000000000000')).toBeNull();
     });
   });
+
+  describe('service', () => {
+    const merchantSvc = require('../../src/services/merchant.service');
+    const { HttpError } = require('../../src/utils/errors');
+
+    test('getById throws 404 HttpError when not found', async () => {
+      await expect(
+        merchantSvc.getById('00000000-0000-0000-0000-000000000000'),
+      ).rejects.toThrow(HttpError);
+      try {
+        await merchantSvc.getById('00000000-0000-0000-0000-000000000000');
+      } catch (e) {
+        expect(e.status).toBe(404);
+        expect(e.code).toBe('NOT_FOUND');
+      }
+    });
+
+    test('update throws 404 HttpError when id does not exist', async () => {
+      await expect(
+        merchantSvc.update('00000000-0000-0000-0000-000000000000', { name: 'X' }),
+      ).rejects.toMatchObject({ status: 404, code: 'NOT_FOUND' });
+    });
+
+    test('remove throws 404 HttpError when id does not exist', async () => {
+      await expect(
+        merchantSvc.remove('00000000-0000-0000-0000-000000000000'),
+      ).rejects.toMatchObject({ status: 404, code: 'NOT_FOUND' });
+    });
+  });
 });
