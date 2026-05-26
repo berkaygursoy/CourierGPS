@@ -171,4 +171,128 @@ describe('Orders', () => {
       ).rejects.toMatchObject({ status: 404, code: 'NOT_FOUND' });
     });
   });
+
+  describe('HTTP', () => {
+    const baseBody = () => ({
+      merchant_id: merchant.id,
+      customer_name: 'Ali',
+      delivery_address: '1 Customer St',
+      delivery_lat: 41.01,
+      delivery_lng: 28.98,
+    });
+
+    test('POST /api/orders -> 201 with created entity', async () => {
+      const res = await request(app).post('/api/orders').send(baseBody());
+      expect(res.status).toBe(201);
+      expect(res.body.id).toMatch(/^[0-9a-f-]{36}$/);
+      expect(res.body.status).toBe('pending');
+      expect(res.body.courier_id).toBeNull();
+    });
+
+    test('POST /api/orders -> 400 INVALID_REFERENCE when merchant_id unknown', async () => {
+      const res = await request(app)
+        .post('/api/orders')
+        .send({ ...baseBody(), merchant_id: '00000000-0000-0000-0000-000000000000' });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('INVALID_REFERENCE');
+    });
+
+    test('POST /api/orders -> 400 VALIDATION_ERROR when latitude missing', async () => {
+      const body = baseBody();
+      delete body.delivery_lat;
+      const res = await request(app).post('/api/orders').send(body);
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    test('GET /api/orders -> 200 with all orders', async () => {
+      await request(app).post('/api/orders').send(baseBody());
+      await request(app).post('/api/orders').send(baseBody());
+      const res = await request(app).get('/api/orders');
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(2);
+    });
+
+    test('GET /api/orders?status=delivered -> filters list', async () => {
+      const a = await request(app).post('/api/orders').send(baseBody());
+      await request(app).post('/api/orders').send(baseBody());
+      await request(app)
+        .patch(`/api/orders/${a.body.id}`)
+        .send({ courier_id: courier.id });
+      await request(app)
+        .patch(`/api/orders/${a.body.id}`)
+        .send({ status: 'delivered' });
+
+      const res = await request(app).get('/api/orders?status=delivered');
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].id).toBe(a.body.id);
+    });
+
+    test('GET /api/orders/:id -> 200 with entity', async () => {
+      const created = await request(app).post('/api/orders').send(baseBody());
+      const res = await request(app).get(`/api/orders/${created.body.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.id).toBe(created.body.id);
+    });
+
+    test('GET /api/orders/:id -> 404 when not found', async () => {
+      const res = await request(app).get('/api/orders/00000000-0000-0000-0000-000000000000');
+      expect(res.status).toBe(404);
+    });
+
+    test('PATCH /api/orders/:id -> assigns courier and auto-sets status=assigned', async () => {
+      const created = await request(app).post('/api/orders').send(baseBody());
+      const res = await request(app)
+        .patch(`/api/orders/${created.body.id}`)
+        .send({ courier_id: courier.id });
+      expect(res.status).toBe(200);
+      expect(res.body.courier_id).toBe(courier.id);
+      expect(res.body.status).toBe('assigned');
+      expect(res.body.assigned_at).not.toBeNull();
+    });
+
+    test('PATCH /api/orders/:id -> 400 INVALID_REFERENCE for missing courier_id', async () => {
+      const created = await request(app).post('/api/orders').send(baseBody());
+      const res = await request(app)
+        .patch(`/api/orders/${created.body.id}`)
+        .send({ courier_id: '00000000-0000-0000-0000-000000000000' });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('INVALID_REFERENCE');
+    });
+
+    test('PATCH /api/orders/:id -> status=delivered stamps delivered_at', async () => {
+      const created = await request(app).post('/api/orders').send(baseBody());
+      await request(app)
+        .patch(`/api/orders/${created.body.id}`)
+        .send({ courier_id: courier.id });
+      const res = await request(app)
+        .patch(`/api/orders/${created.body.id}`)
+        .send({ status: 'delivered' });
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('delivered');
+      expect(res.body.delivered_at).not.toBeNull();
+    });
+
+    test('PATCH /api/orders/:id -> 400 when body empty', async () => {
+      const created = await request(app).post('/api/orders').send(baseBody());
+      const res = await request(app).patch(`/api/orders/${created.body.id}`).send({});
+      expect(res.status).toBe(400);
+    });
+
+    test('PATCH /api/orders/:id -> 404 when not found', async () => {
+      const res = await request(app)
+        .patch('/api/orders/00000000-0000-0000-0000-000000000000')
+        .send({ status: 'cancelled' });
+      expect(res.status).toBe(404);
+    });
+
+    test('DELETE /api/orders/:id -> 204 then 404', async () => {
+      const created = await request(app).post('/api/orders').send(baseBody());
+      const del = await request(app).delete(`/api/orders/${created.body.id}`);
+      expect(del.status).toBe(204);
+      const second = await request(app).delete(`/api/orders/${created.body.id}`);
+      expect(second.status).toBe(404);
+    });
+  });
 });
