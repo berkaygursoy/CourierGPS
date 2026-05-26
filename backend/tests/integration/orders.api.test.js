@@ -103,4 +103,72 @@ describe('Orders', () => {
       ).rejects.toThrow(/foreign key/i);
     });
   });
+
+  describe('service', () => {
+    const orderSvc = require('../../src/services/order.service');
+
+    const baseOrder = () => ({
+      merchant_id: merchant.id,
+      customer_name: 'Ali',
+      delivery_address: '1 St',
+      delivery_lat: 41.01,
+      delivery_lng: 28.98,
+    });
+
+    test('create surfaces missing merchant as 400 INVALID_REFERENCE', async () => {
+      await expect(
+        orderSvc.create({ ...baseOrder(), merchant_id: '00000000-0000-0000-0000-000000000000' }),
+      ).rejects.toMatchObject({ status: 400, code: 'INVALID_REFERENCE' });
+    });
+
+    test('getById throws 404 when not found', async () => {
+      await expect(
+        orderSvc.getById('00000000-0000-0000-0000-000000000000'),
+      ).rejects.toMatchObject({ status: 404, code: 'NOT_FOUND' });
+    });
+
+    test('assigning a courier auto-sets status=assigned and assigned_at', async () => {
+      const o = await orderSvc.create(baseOrder());
+      const updated = await orderSvc.update(o.id, { courier_id: courier.id });
+      expect(updated.status).toBe('assigned');
+      expect(updated.courier_id).toBe(courier.id);
+      expect(updated.assigned_at).not.toBeNull();
+    });
+
+    test('clearing courier_id sets status back to pending', async () => {
+      const o = await orderSvc.create(baseOrder());
+      await orderSvc.update(o.id, { courier_id: courier.id });
+      const updated = await orderSvc.update(o.id, { courier_id: null });
+      expect(updated.courier_id).toBeNull();
+      expect(updated.status).toBe('pending');
+    });
+
+    test('setting status=picked_up stamps picked_up_at', async () => {
+      const o = await orderSvc.create(baseOrder());
+      await orderSvc.update(o.id, { courier_id: courier.id });
+      const updated = await orderSvc.update(o.id, { status: 'picked_up' });
+      expect(updated.status).toBe('picked_up');
+      expect(updated.picked_up_at).not.toBeNull();
+    });
+
+    test('setting status=delivered stamps delivered_at', async () => {
+      const o = await orderSvc.create(baseOrder());
+      await orderSvc.update(o.id, { courier_id: courier.id });
+      const updated = await orderSvc.update(o.id, { status: 'delivered' });
+      expect(updated.delivered_at).not.toBeNull();
+    });
+
+    test('update surfaces missing courier_id as 400 INVALID_REFERENCE', async () => {
+      const o = await orderSvc.create(baseOrder());
+      await expect(
+        orderSvc.update(o.id, { courier_id: '00000000-0000-0000-0000-000000000000' }),
+      ).rejects.toMatchObject({ status: 400, code: 'INVALID_REFERENCE' });
+    });
+
+    test('remove throws 404 when id does not exist', async () => {
+      await expect(
+        orderSvc.remove('00000000-0000-0000-0000-000000000000'),
+      ).rejects.toMatchObject({ status: 404, code: 'NOT_FOUND' });
+    });
+  });
 });
