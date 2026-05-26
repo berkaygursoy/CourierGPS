@@ -2,24 +2,44 @@
 
 function CourierRow({ rank, courier, isNearest, onAssign }) {
   const busy = courier.status !== 'idle';
+  const idleMinutes = Number(courier.idleFor?.replace('m', ''));
 
+  // Busy rows aren't actionable — render a non-interactive div so the row
+  // doesn't show as a focusable/clickable target.
+  if (busy) {
+    return (
+      <div
+        aria-disabled="true"
+        className="relative grid grid-cols-[28px_1fr_auto] items-center gap-3.5 px-5 py-3.5 border-b border-rule opacity-40 cursor-not-allowed"
+      >
+        <span className="font-mono text-[10px] text-dim tracking-[0.1em]">
+          {String(rank).padStart(2, '0')}
+        </span>
+        <div>
+          <div className="font-display italic text-[22px] leading-[1.1] tracking-[-0.01em] text-paper">
+            {courier.name}
+          </div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-dim mt-0.5">
+            Delivering {courier.activeOrder} · ETA {courier.etaMin}m
+          </div>
+        </div>
+        <div className="font-mono text-[18px] text-paper tracking-[-0.02em] text-right tabular-nums">
+          {courier.distanceKm.toFixed(1)}
+          <span className="text-[10px] text-dim tracking-[0.15em] uppercase ml-1">km</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Idle rows are the action target. The whole row is a real <button> so
+  // keyboard, screen-reader, and pointer all converge on one interactive
+  // element. The "Assign →" reveal inside is a visual flourish only.
   return (
-    <div
-      role="button"
-      tabIndex={busy ? -1 : 0}
-      aria-disabled={busy}
-      aria-label={busy ? undefined : `Assign ${courier.name}`}
-      onClick={busy ? undefined : onAssign}
-      onKeyDown={(e) => {
-        if (busy) return;
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onAssign?.();
-        }
-      }}
-      className={`group relative grid grid-cols-[28px_1fr_auto] items-center gap-3.5 px-5 py-3.5 border-b border-rule transition-colors ${
-        busy ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:bg-canvas-2'
-      }`}
+    <button
+      type="button"
+      onClick={onAssign}
+      aria-label={`Assign ${courier.name}`}
+      className="group relative grid grid-cols-[28px_1fr_auto] items-center gap-3.5 px-5 py-3.5 border-b border-rule transition-colors cursor-pointer hover:bg-canvas-2 text-left w-full"
     >
       {isNearest && (
         <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-0.5 bg-signal" />
@@ -34,16 +54,10 @@ function CourierRow({ rank, courier, isNearest, onAssign }) {
           {courier.name}
         </div>
         <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-dim mt-0.5">
-          {busy ? (
-            <>Delivering {courier.activeOrder} · ETA {courier.etaMin}m</>
-          ) : (
-            <>
-              {courier.vehicle} ·{' '}
-              <span className={Number(courier.idleFor?.replace('m', '')) > 10 ? 'text-moss' : 'text-signal'}>
-                Idle {courier.idleFor}
-              </span>
-            </>
-          )}
+          {courier.vehicle} ·{' '}
+          <span className={idleMinutes > 10 ? 'text-moss' : 'text-signal'}>
+            Idle {courier.idleFor}
+          </span>
         </div>
       </div>
 
@@ -52,18 +66,14 @@ function CourierRow({ rank, courier, isNearest, onAssign }) {
         <span className="text-[10px] text-dim tracking-[0.15em] uppercase ml-1">km</span>
       </div>
 
-      {!busy && (
-        <button
-          type="button"
-          tabIndex={-1}
-          onClick={(e) => { e.stopPropagation(); onAssign?.(); }}
-          className="col-span-3 mt-3 bg-signal hover:bg-signal-d text-canvas font-mono text-[11px] uppercase tracking-[0.18em] px-3.5 py-2.5 cursor-pointer opacity-0 -translate-x-1.5 transition-[opacity,transform] duration-150 group-hover:opacity-100 group-hover:translate-x-0 group-focus-within:opacity-100 group-focus-within:translate-x-0 flex justify-between items-center"
-        >
-          Assign
-          <span className="font-display italic text-base">→</span>
-        </button>
-      )}
-    </div>
+      <span
+        aria-hidden="true"
+        className="col-span-3 mt-3 bg-signal text-canvas font-mono text-[11px] uppercase tracking-[0.18em] px-3.5 py-2.5 opacity-0 -translate-x-1.5 transition-[opacity,transform] duration-150 group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0 flex justify-between items-center"
+      >
+        Assign
+        <span className="font-display italic text-base">→</span>
+      </span>
+    </button>
   );
 }
 
