@@ -78,16 +78,25 @@ export function CourierRail({ couriers, selectedOrderId, onAssign }) {
     <aside aria-label="Courier list" className="bg-canvas grid grid-rows-[auto_1fr] min-h-0">
       <div className="px-5 pt-5 pb-3.5 border-b border-rule">
         <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-dim mb-1.5">
-          Couriers · for order
+          {idleCount === 0 ? 'Couriers · queued' : 'Couriers · for order'}
         </div>
         <h2 className="font-display italic text-[30px] leading-none tracking-[-0.01em] text-paper">
-          Nearest to <span className="text-signal">{selectedOrderId}</span>
+          {idleCount === 0 ? (
+            <>All in <span className="text-signal">transit</span></>
+          ) : (
+            <>Nearest to <span className="text-signal">{selectedOrderId}</span></>
+          )}
         </h2>
         <div className="mt-2.5 flex gap-3.5 font-mono text-[11px] text-dim">
           <span><b className="text-paper font-medium tabular-nums">{String(idleCount).padStart(2, '0')}</b> idle</span>
           <span><b className="text-paper font-medium tabular-nums">{String(busyCount).padStart(2, '0')}</b> busy</span>
           <span>radius <b className="text-paper font-medium">2.0</b>km</span>
         </div>
+        {idleCount === 0 && (
+          <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-signal/80">
+            Holding — next courier free in ~{Math.min(...couriers.filter((c) => c.etaMin).map((c) => c.etaMin), 99)}m
+          </div>
+        )}
       </div>
 
       <div className="overflow-y-auto pb-6">
