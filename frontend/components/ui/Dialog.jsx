@@ -33,22 +33,22 @@ export function Dialog({ open, onClose, title, children, footer, widthClass = 'm
   return (
     <dialog
       ref={ref}
-      className={`m-auto p-0 rounded-lg shadow-xl border border-zinc-200 bg-white text-zinc-900 w-full ${widthClass} backdrop:bg-zinc-900/40`}
+      className={`m-auto p-0 border border-rule bg-canvas text-paper w-full ${widthClass} backdrop:bg-canvas/70 backdrop:backdrop-blur-sm`}
     >
-      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200">
-        <h2 className="text-sm font-semibold">{title}</h2>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-rule">
+        <h2 className="font-display italic text-2xl leading-none">{title}</h2>
         <button
           type="button"
           onClick={onClose}
-          className="text-zinc-400 hover:text-zinc-700 text-lg leading-none"
+          className="text-dim hover:text-paper text-xl leading-none transition-colors cursor-pointer"
           aria-label="Close"
         >
           ×
         </button>
       </div>
-      <div className="p-4">{children}</div>
+      <div className="p-5 text-[13px]">{children}</div>
       {footer && (
-        <div className="px-4 py-3 border-t border-zinc-200 flex justify-end gap-2 bg-zinc-50">
+        <div className="px-5 py-4 border-t border-rule flex justify-end gap-3 bg-canvas-2">
           {footer}
         </div>
       )}

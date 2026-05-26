@@ -1,65 +1,120 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+import { useMemo, useState } from 'react';
+import { Topbar } from '@/components/dispatch/Topbar';
+import { MapView } from '@/components/dispatch/MapView';
+import { CourierRail } from '@/components/dispatch/CourierRail';
+import { OrderStrip } from '@/components/dispatch/OrderStrip';
+import { toast } from '@/components/ui/Toaster';
+import {
+  STUB_MERCHANTS,
+  STUB_COURIERS,
+  STUB_ORDERS,
+  STUB_OPERATOR,
+} from '@/lib/stub-data';
+
+export default function Dashboard() {
+  const [orders, setOrders] = useState(STUB_ORDERS);
+  const [couriers, setCouriers] = useState(STUB_COURIERS);
+  const [selectedOrderId, setSelectedOrderId] = useState(STUB_ORDERS[0].id);
+
+  // Selected order may have been assigned away — fall back to first available.
+  const activeOrderId =
+    orders.find((o) => o.id === selectedOrderId)?.id ?? orders[0]?.id;
+
+  const kpis = useMemo(() => {
+    const idle = couriers.filter((c) => c.status === 'idle').length;
+    const inTransit = couriers.filter((c) => c.status === 'delivering').length;
+    return {
+      pending: orders.length,
+      idle,
+      inTransit,
+      // Static deltas for now — when the backend ships, derive from a 5-min window.
+      pendingDelta: 2,
+      etaDelta: -1,
+      avgRadiusKm: 0.9,
+    };
+  }, [orders, couriers]);
+
+  function onAssign(courier) {
+    if (!activeOrderId) return;
+
+    setOrders((prev) => prev.filter((o) => o.id !== activeOrderId));
+
+    setCouriers((prev) =>
+      prev.map((c) =>
+        c.id === courier.id
+          ? {
+              ...c,
+              status: 'delivering',
+              activeOrder: activeOrderId,
+              etaMin: Math.max(3, Math.round(courier.distanceKm * 4)),
+              idleFor: undefined,
+            }
+          : c,
+      ),
+    );
+
+    // Auto-advance to the next oldest order so the dispatcher keeps moving.
+    setSelectedOrderId((current) => {
+      const remaining = orders.filter((o) => o.id !== activeOrderId);
+      if (current !== activeOrderId) return current;
+      return remaining[0]?.id ?? null;
+    });
+
+    toast({
+      tone: 'success',
+      title: `Assigned ${courier.name.split(' ')[0]}`,
+      body: `${activeOrderId} dispatched · ETA ${Math.max(3, Math.round(courier.distanceKm * 4))}m`,
+    });
+  }
+
+  // Empty-state guard — the dispatcher cleared the queue.
+  if (!activeOrderId) {
+    return (
+      <main className="grid grid-rows-[64px_1fr] h-screen" aria-label="Dispatcher control room">
+        <Topbar kpis={kpis} operator={STUB_OPERATOR} />
+        <div className="grid place-items-center bg-canvas-2 border-t border-rule">
+          <div className="text-center">
+            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-dim mb-3">
+              Queue
+            </div>
+            <div className="font-display italic text-[64px] leading-none tracking-[-0.02em] text-paper">
+              Empty
+            </div>
+            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim mt-3">
+              All orders dispatched · {kpis.inTransit} in transit
+            </div>
+          </div>
         </div>
       </main>
-    </div>
+    );
+  }
+
+  return (
+    <main className="grid grid-rows-[64px_1fr_152px] h-screen" aria-label="Dispatcher control room">
+      <Topbar kpis={kpis} operator={STUB_OPERATOR} />
+
+      <section className="grid grid-cols-[1fr_380px] min-h-0">
+        <MapView
+          orders={orders}
+          couriers={couriers}
+          merchants={STUB_MERCHANTS}
+          selectedOrderId={activeOrderId}
+          coordsLabel={STUB_OPERATOR.coordsLabel}
+        />
+        <CourierRail
+          couriers={couriers}
+          selectedOrderId={activeOrderId}
+          onAssign={onAssign}
+        />
+      </section>
+
+      <OrderStrip
+        orders={orders}
+        selectedId={activeOrderId}
+        onSelect={setSelectedOrderId}
+      />
+    </main>
   );
 }

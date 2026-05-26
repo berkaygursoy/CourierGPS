@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ─── Control Room Editorial — token system ───────────────────────
+ *  Single source of truth for color, type and rhythm.
+ *  See docs/design-explorations/2026-05-26-dispatch-v1.html for the
+ *  visual reference this language was approved against.
+ * ──────────────────────────────────────────────────────────────── */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Type ramps — fonts are injected from next/font in app/layout.js */
+  --font-display: var(--font-instrument-serif), 'Times New Roman', serif;
+  --font-sans:    var(--font-plex-sans), system-ui, sans-serif;
+  --font-mono:    var(--font-plex-mono), ui-monospace, monospace;
+
+  /* Surfaces */
+  --color-canvas:    #0F0E0C;
+  --color-canvas-2:  #15130F;
+  --color-paper:     #F2EDE3;
+  --color-paper-2:   #E9E2D2;
+  --color-ink:       #14130F;
+
+  /* Signal — vermillion is reserved for live/urgent state only. */
+  --color-signal:    #E8501E;
+  --color-signal-d:  #B73C13;
+
+  /* Calm — moss reads as "idle / dispatched / safe". */
+  --color-moss:      #6B7A4F;
+
+  /* Rules & dim text */
+  --color-rule:      #2A2723;
+  --color-rule-2:    #C9C0AE;
+  --color-dim:       #8A847A;
+  --color-dim-2:     #5F5A52;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+html, body { height: 100%; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The live pulse — used by the topbar live indicator. */
+@keyframes pulse-signal {
+  0%   { box-shadow: 0 0 0 0 rgba(232, 80, 30, 0.55); }
+  70%  { box-shadow: 0 0 0 8px rgba(232, 80, 30, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(232, 80, 30, 0); }
+}
+.pulse-signal { animation: pulse-signal 1.6s ease-out infinite; }
+
+/* Single-shot focus ring used when an order is selected on the map. */
+@keyframes ring-in {
+  0%   { opacity: 0; width: 40px;  height: 40px; }
+  100% { opacity: 0.55; width: 320px; height: 320px; }
+}
+.ring-in {
+  opacity: 0;
+  animation: ring-in 700ms 100ms ease-out forwards;
+}
+
+/* Single-shot vector line draw — uses clip-path so the line "wipes" in
+ * along its own length regardless of the rotated transform. */
+@keyframes line-draw {
+  0%   { opacity: 0; clip-path: inset(0 100% 0 0); }
+  100% { opacity: 0.6; clip-path: inset(0 0 0 0); }
+}
+.line-draw {
+  opacity: 0;
+  animation: line-draw 600ms 300ms ease-out forwards;
+}
+
+/* Hairline scrollbar — matches the brutalist rule system. */
+::-webkit-scrollbar       { height: 6px; width: 6px; }
+::-webkit-scrollbar-thumb { background: var(--color-rule); }
+::-webkit-scrollbar-track { background: transparent; }
+
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
 }

@@ -4,8 +4,8 @@ export const Input = forwardRef(function Input({ className = '', error, ...props
   return (
     <input
       ref={ref}
-      className={`h-9 px-3 text-sm rounded-md border bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 ${
-        error ? 'border-red-400' : 'border-zinc-200'
+      className={`h-9 px-3 font-mono text-[12px] bg-canvas text-paper border placeholder:text-dim focus:outline-none focus:border-signal transition-colors ${
+        error ? 'border-signal' : 'border-rule'
       } ${className}`}
       {...props}
     />

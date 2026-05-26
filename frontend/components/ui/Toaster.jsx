@@ -15,9 +15,15 @@ export function toast({ tone = 'error', title, body }) {
 }
 
 const toneStyles = {
-  error: 'border-red-200 bg-red-50 text-red-900',
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-900',
-  info: 'border-zinc-200 bg-white text-zinc-900',
+  error:   'border-signal text-paper bg-canvas',
+  success: 'border-moss text-paper bg-canvas',
+  info:    'border-rule text-paper bg-canvas-2',
+};
+
+const toneAccent = {
+  error:   'bg-signal',
+  success: 'bg-moss',
+  info:    'bg-dim',
 };
 
 export function Toaster() {
@@ -42,10 +48,13 @@ export function Toaster() {
         <div
           key={t.id}
           onClick={() => dismiss(t.id)}
-          className={`pointer-events-auto cursor-pointer rounded-md border shadow-sm px-3 py-2 ${toneStyles[t.tone]}`}
+          className={`pointer-events-auto cursor-pointer border px-4 py-3 flex gap-3 ${toneStyles[t.tone]}`}
         >
-          {t.title && <div className="text-sm font-medium">{t.title}</div>}
-          {t.body && <div className="text-xs mt-0.5 opacity-80">{t.body}</div>}
+          <span className={`w-[2px] -my-3 -ml-4 mr-1 ${toneAccent[t.tone]}`} aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            {t.title && <div className="font-mono text-[11px] uppercase tracking-[0.18em]">{t.title}</div>}
+            {t.body && <div className="text-[12px] mt-1 text-dim">{t.body}</div>}
+          </div>
         </div>
       ))}
     </div>
