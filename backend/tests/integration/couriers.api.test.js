@@ -67,4 +67,33 @@ describe('Couriers', () => {
       ).rejects.toThrow(/unique/i);
     });
   });
+
+  describe('service', () => {
+    const courierSvc = require('../../src/services/courier.service');
+
+    test('getById throws 404 HttpError when not found', async () => {
+      await expect(
+        courierSvc.getById('00000000-0000-0000-0000-000000000000'),
+      ).rejects.toMatchObject({ status: 404, code: 'NOT_FOUND' });
+    });
+
+    test('update throws 404 when id does not exist', async () => {
+      await expect(
+        courierSvc.update('00000000-0000-0000-0000-000000000000', { status: 'idle' }),
+      ).rejects.toMatchObject({ status: 404, code: 'NOT_FOUND' });
+    });
+
+    test('remove throws 404 when id does not exist', async () => {
+      await expect(
+        courierSvc.remove('00000000-0000-0000-0000-000000000000'),
+      ).rejects.toMatchObject({ status: 404, code: 'NOT_FOUND' });
+    });
+
+    test('create surfaces duplicate phone as 400 DUPLICATE_PHONE', async () => {
+      await courierSvc.create({ name: 'A', phone: '+905551112233' });
+      await expect(
+        courierSvc.create({ name: 'B', phone: '+905551112233' }),
+      ).rejects.toMatchObject({ status: 400, code: 'DUPLICATE_PHONE' });
+    });
+  });
 });
