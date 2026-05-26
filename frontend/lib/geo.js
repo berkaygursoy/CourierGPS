@@ -16,6 +16,9 @@ export function haversineKm(a, b) {
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(x));
 }
 
+// Couriers without lat/lng degrade to (0, 0). This is intentional defensive behavior:
+// the function must not crash on missing coords. Until couriers have seeded positions,
+// all distances tie and the sort is stable — acceptable because real-time positions arrive later.
 export function sortCouriersByDistance(couriers, point) {
   return couriers
     .map((c) => ({
