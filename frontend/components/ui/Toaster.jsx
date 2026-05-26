@@ -43,8 +43,8 @@ export function Toaster() {
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 w-80 pointer-events-none">
-      {toasts.map((t) => (
+    <div className="fixed top-[76px] right-[396px] z-50 flex flex-col gap-2 w-80 pointer-events-none">
+      {toasts.slice(-3).map((t) => (
         <div
           key={t.id}
           onClick={() => dismiss(t.id)}
